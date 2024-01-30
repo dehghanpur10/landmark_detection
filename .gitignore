@@ -1,0 +1,11 @@
+model/models/*
+labeling/images/*
+!labeling/images/.gitkeep
+
+
+#VIRTUAL ENVIRONMENTS
+venv*
+__pycache__
+.conda
+my_images/*
+!my_images/.gitkeep
