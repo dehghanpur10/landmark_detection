@@ -10,14 +10,9 @@ from keras.layers import Dropout, Dense, GlobalAveragePooling2D
 from keras import models
 from keras.applications import MobileNetV2
 from keras import layers
-from labeling import TYPES, load_images_from_folder
 from manipulate_img import scale_image
-
-def normalize_input_images(images):
-    # Convert images to float32
-    images = images.astype('float32')
-    images = images / 127.0 - 1 
-    return images
+import os
+from enum import Enum
 
 OUTPUT_ELEMENT_SIZE = 10
 INPUT_SHAPE = 128
@@ -25,15 +20,32 @@ SCALE = INPUT_SHAPE / 512.0
 mmd_images_path = './../my_images/mmd'
 hamed_images_path = './../my_images/hamed'
 
+def load_images_from_folder(folder):
+    images = []
+    names = []
+    for filename in os.listdir(folder):
+        if filename.endswith(".jpg") or filename.endswith(".png"):  # Modify as per your file types
+            img = cv2.imread(os.path.join(folder, filename))
+            if img is not None:
+                images.append(img)
+                names.append(filename)
+
+    return images, names
+class TYPES(Enum):
+    TYPE1 = 'type1'
+    TYPE2 = 'type2'
+    TYPE3 = 'type3'
+    TYPE4 = 'type4'
+    TYPE5 = 'type5'
+def normalize_input_images(images):
+    # Convert images to float32
+    images = images.astype('float32')
+    images = images / 127.0 - 1 
+    return images
+
 
 outputs = []
 mmd_images,mmd_names = load_images_from_folder(mmd_images_path)
-hamed_images,hamed_names = load_images_from_folder(hamed_images_path)
-
-print(len(mmd_images),"mmd images")
-print(len(hamed_images),"hamed images")
-
-
     
 normal_images = []
 augmented_images = []
@@ -41,35 +53,6 @@ augmented_images = []
 normal_outputs = []
 augmented_outputs = []
 
-for i in range(len(hamed_images)):
-    # stateless_random_contrast = tf.image.stateless_random_contrast(images[i], lower=0.1, upper=0.9, seed=(i,0))
-    # stateless_random_contrast = scale_image(np.array(stateless_random_contrast), SCALE)
-    # stateless_random_brightness = tf.image.stateless_random_brightness(images[i], max_delta=0.95, seed=(i,0))
-    # stateless_random_brightness = scale_image(np.array(stateless_random_brightness),SCALE)
-    
-    
-    hamed_images[i] = scale_image(hamed_images[i], SCALE)
-    splitted_name = hamed_names[i].split('_')
-    splitted_name.pop()  #drop the last part
-    output_element = OUTPUT_ELEMENT_SIZE * [0]
-    normal_images.append(hamed_images[i])
-
-    for type_coordinates in splitted_name: #type_coordinates format => 'type1-305-289'
-        [point_type, x, y] = type_coordinates.split('-')
-
-        for index, currentType in enumerate(TYPES):
-            if currentType.value == point_type:
-                output_element[index*2] = float(x)
-                output_element[index*2+1] = float(y)
-                # output_element[10] = 0
-                # augmented_images.append(stateless_random_contrast)
-                # augmented_images.append(stateless_random_brightness)
-    print("hamed", output_element)
-    normal_outputs.append(output_element)
-                
-                # augmented_outputs.append(output_element)
-                # augmented_outputs.append(output_element)
-print("df")           
 for i in range(len(mmd_images)):   
     mmd_images[i] = scale_image(mmd_images[i], SCALE)
     splitted_name = mmd_names[i].split('_')
@@ -85,17 +68,12 @@ for i in range(len(mmd_images)):
                 output_element[index*2] = float(x)
                 output_element[index*2+1] = float(y)
                 # output_element[10] = 1
-    print("mohammad", output_element)
            
     normal_outputs.append(output_element)
-                
-               
 
 output = np.array(normal_outputs+augmented_outputs) / 512.0
 images = np.array(normal_images+augmented_images)
 
-print("images", len(images))
-print("outputs", len(output))
 normal_images = []
 augmented_images = []
 normal_outputs = []
@@ -132,7 +110,7 @@ final_model.summary()
 images = normalize_input_images(images)
 
 train_images, test_images, train_output, test_output = train_test_split(images, output, test_size=0.1, random_state=42, shuffle=True)
-final_model.fit(train_images, train_output, validation_data=(test_images, test_output), batch_size=8, epochs=50)
+final_model.fit(train_images, train_output, validation_data=(test_images, test_output), batch_size=16, epochs=150)
 
 plt.plot(final_model.history.history['loss'])
 plt.title('model loss')
