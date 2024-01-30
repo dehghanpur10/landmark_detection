@@ -7,5 +7,11 @@ labeling/images/*
 venv*
 __pycache__
 .conda
-my_images/*
-!my_images/.gitkeep
+
+my_images/mmd/*
+my_images/hamed/*
+
+!my_images/mmd/.gitkeep
+!my_images/hamed/.gitkeep
+
+
